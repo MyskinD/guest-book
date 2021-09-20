@@ -1,0 +1,67 @@
+version: '3'
+
+services:
+    mysql:
+        container_name: mysql
+        image: mysql:8.0.20
+        restart: unless-stopped
+        tty: true
+        command: --default-authentication-plugin=mysql_native_password
+        volumes:
+            - "./docker/mysql/dbdata:/var/lib/mysql"
+        environment:
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        ports:
+            - 3306:3306
+        networks:
+            - symfony
+    postgresql:
+        container_name: postgresql
+        image: postgres:13-alpine
+        restart: unless-stopped
+        tty: true
+        volumes:
+            - "./docker/postgresql/dbdata:/var/lib/postgresql/data"
+        environment:
+            POSTGRES_USER: ${POSTGRESQL_USER}
+            POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+            POSTGRES_DB: ${POSTGRESQL_DATABASE}
+        ports:
+            - 5432:5432
+        networks:
+            - symfony
+    php:
+        container_name: php
+        tty: true
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+            args:
+                TIMEZONE: ${TIMEZONE}
+        volumes:
+            - ./symfony/:/var/www/symfony/
+        networks:
+            - symfony
+    nginx:
+        container_name: nginx
+        tty: true
+        build:
+            context: .
+            dockerfile: docker/nginx/Dockerfile
+        volumes:
+            - ./symfony/:/var/www/symfony/
+        ports:
+            - 80:80
+        networks:
+            - symfony
+
+volumes:
+    dbdata:
+        driver: local
+
+networks:
+    symfony:
+        driver: bridge
